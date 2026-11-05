@@ -83,6 +83,14 @@ app/src/main/java/com/aichathub/
 - Google 帳號 OAuth（需自行在 Google Cloud 建立 OAuth Client）
 - 對話匯出、雲端同步
 
+## 文檔
+
+- **使用說明與技術手冊**（安裝、服務設定、Agent／MCP／A2A、協定實作、擴充指南）：
+  - Markdown：[docs/AIChatHub_使用說明與技術手冊.md](docs/AIChatHub_使用說明與技術手冊.md)
+  - PDF：[docs/AIChatHub_使用說明與技術手冊.pdf](docs/AIChatHub_使用說明與技術手冊.pdf)
+  - Word：[docs/AIChatHub_使用說明與技術手冊.docx](docs/AIChatHub_使用說明與技術手冊.docx)
+- **架構圖**：[docs/AIChatHub_架構圖.png](docs/AIChatHub_架構圖.png)
+
 ## 授權
 
 本專案由 Claude（AI）從零設計，作為 **AI 協作開發 Android App 的參考範本**。以 MIT License 釋出：**可以自由修改、直接拿來用、拿去做出自己的產品**，無版權負擔。詳見 [LICENSE](LICENSE)。

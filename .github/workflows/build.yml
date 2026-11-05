@@ -6,6 +6,10 @@ on:
     paths-ignore:
       - "**.md"
       - "LICENSE"
+      - "**.png"
+      - "**.pdf"
+      - "**.docx"
+      - "docs/**"
   pull_request:
   workflow_dispatch:
 
