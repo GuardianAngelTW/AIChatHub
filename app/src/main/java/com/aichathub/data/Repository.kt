@@ -25,16 +25,29 @@ class Repository(context: Context) {
 
     private fun loadProviders(): List<ProviderConfig> {
         val saved = prefs.getString("providers", null)
-            ?: return Presets.featured.map { it.toConfig() }.also { persistRaw(it) } // 首次啟動：建立預設 7 個服務
-        return runCatching { json.decodeFromString<List<ProviderConfig>>(saved) }.getOrNull() ?: emptyList()
+        if (saved == null) { // 首次啟動：建立全部預設服務
+            prefs.edit().putInt("featured_version", Presets.FEATURED_VERSION).apply()
+            return Presets.featured.map { it.toConfig() }.also { persistRaw(it) }
+        }
+        val list = runCatching { json.decodeFromString<List<ProviderConfig>>(saved) }.getOrNull() ?: emptyList()
+        // 升級：補上新版本加入的預設服務（已有同名或同網址同協定者不重複建立）
+        if (prefs.getInt("featured_version", 1) < Presets.FEATURED_VERSION) {
+            val added = list + missingFeatured(list).map { it.toConfig() }
+            prefs.edit().putInt("featured_version", Presets.FEATURED_VERSION).apply()
+            if (added.size != list.size) persistRaw(added)
+            return added
+        }
+        return list
     }
+
+    private fun missingFeatured(list: List<ProviderConfig>) = Presets.missingFrom(list)
 
     private fun persistRaw(list: List<ProviderConfig>) =
         prefs.edit().putString("providers", json.encodeToString(list)).apply()
 
     /** 把缺少的預設服務補回來（依名稱判斷） */
     fun restoreFeatured(): Int {
-        val missing = Presets.featured.filter { f -> _providers.value.none { it.name == f.label } }
+        val missing = missingFeatured(_providers.value)
         if (missing.isNotEmpty()) persistProviders(_providers.value + missing.map { it.toConfig() })
         return missing.size
     }

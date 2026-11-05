@@ -45,6 +45,35 @@ fun main() {
     check("Gemini 串流") { val o = client.stream(ge, "k", "gemini-mock", "sys", hist).toList().joinToString(""); assertThat(o.startsWith("Hello"), o); o }
     check("Gemini 模型清單（過濾非對話模型）") { val m = client.listModels(ge, "k"); assertThat(m == listOf("gemini-mock"), m.toString()); m.joinToString() }
 
+    println("===== 預設服務 =====")
+    check("預設服務包含 OpenCode / Ollama / NVIDIA / Kilo") {
+        val names = Presets.featured.map { it.label }
+        for (n in listOf("OpenCode Zen", "OpenCode Zen（Claude 模型）", "OpenCode Server", "Ollama（本地）", "LM Studio（本地）", "NVIDIA", "Kilo Gateway",
+                "GPT（OpenAI）", "Claude（Anthropic）", "Gemini（Google）", "GitHub Copilot", "Grok（xAI）", "OpenRouter", "Groq", "DeepSeek", "Mistral", "Together AI"))
+            assertThat(n in names, "缺少 $n")
+        "${names.size} 個：" + names.joinToString("、")
+    }
+    check("NVIDIA / Kilo 網址") {
+        val nv = Presets.featured.first { it.label == "NVIDIA" }; val ki = Presets.featured.first { it.label == "Kilo Gateway" }
+        assertThat(nv.baseUrl == "https://integrate.api.nvidia.com/v1" && nv.type == ApiType.OPENAI, nv.toString())
+        assertThat(ki.baseUrl == "https://api.kilo.ai/api/gateway" && ki.type == ApiType.OPENAI, ki.toString()); "${nv.baseUrl} / ${ki.baseUrl}"
+    }
+    check("NVIDIA / Kilo 請求路徑（對模擬伺服器）") {
+        // 以相同路徑結構指向本地模擬伺服器，確認 /chat/completions 與 /models 的組合正確
+        val p = ProviderConfig(name = "kilo-like", type = ApiType.OPENAI, baseUrl = "http://127.0.0.1:8787/v1/")
+        client.listModels(p, "k").joinToString() + " | " + client.stream(p, "k", "mock-tool", "", hist).toList().joinToString("")
+    }
+    check("升級補服務：舊版 7 個 → 補齊、不重複") {
+        val old = listOf("GPT（OpenAI）", "Claude（Anthropic）", "Gemini（Google）", "GitHub Copilot", "Grok（xAI）", "OpenRouter", "LM Studio（本地）")
+            .map { n -> Presets.featured.first { it.label == n }.toConfig() } +
+            ProviderConfig(name = "我的 Zen", type = ApiType.OPENAI, baseUrl = "https://opencode.ai/zen/v1/")
+        val miss = Presets.missingFrom(old).map { it.label }
+        assertThat("OpenCode Zen" !in miss, "同網址的 Zen 不應重複：$miss")
+        assertThat("OpenCode Server" in miss && "NVIDIA" in miss && "Kilo Gateway" in miss && "Ollama（本地）" in miss, miss.toString())
+        assertThat(Presets.missingFrom(old + Presets.missingFrom(old).map { it.toConfig() }).isEmpty(), "補完後仍有缺")
+        "補上 ${miss.size} 個：" + miss.joinToString("、")
+    }
+
     println("===== 其他 =====")
     check("OpenRouter callback 為 Lite 專用") { OpenRouterAuth.CALLBACK }
     check("OpenRouter PKCE challenge（RFC 7636 測試向量）") {

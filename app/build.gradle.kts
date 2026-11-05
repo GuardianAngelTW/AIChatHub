@@ -13,8 +13,8 @@ android {
         applicationId = "com.aichathub.lite"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.1.0"
+        versionCode = 3
+        versionName = "1.2.0"
     }
 
     // 固定簽章：每次建置（本機或 GitHub Actions）簽章都相同，才能直接覆蓋安裝更新。

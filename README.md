@@ -6,19 +6,26 @@
 
 ## 支援的服務
 
-首次開啟會自動建立以下 7 個服務，填入金鑰或登入即可使用：
+首次開啟（或從舊版升級）會自動建立以下 17 個服務，填入金鑰或登入即可使用：
 
-| 服務 | 驗證方式 |
-|---|---|
-| GPT（OpenAI） | API Key（platform.openai.com/api-keys） |
-| Claude（Anthropic） | API Key（console.anthropic.com） |
-| Gemini（Google） | API Key（aistudio.google.com/apikey） |
-| GitHub Copilot | GitHub 帳號登入（裝置碼，需 Copilot 訂閱） |
-| Grok（xAI） | API Key（console.x.ai） |
-| OpenRouter | OpenRouter 帳號登入 |
-| LM Studio（本地） | 不需要 |
+| 分類 | 服務 | 驗證方式 | 取得方式 |
+|---|---|---|---|
+| OpenCode | OpenCode Zen | API Key | opencode.ai（含免費模型） |
+| OpenCode | OpenCode Zen（Claude 模型） | 同一把 Zen API Key | Zen 的 Claude 系列走 Anthropic 協定 |
+| OpenCode | OpenCode Server | 伺服器密碼（可留空） | 電腦執行 `opencode serve --hostname 0.0.0.0 --port 4096` |
+| 雲端 | GPT（OpenAI） | API Key | platform.openai.com/api-keys |
+| 雲端 | Claude（Anthropic） | API Key | console.anthropic.com |
+| 雲端 | Gemini（Google） | API Key | aistudio.google.com/apikey |
+| 雲端 | GitHub Copilot | GitHub 帳號登入 | 需 Copilot 訂閱（含免費版） |
+| 雲端 | Grok（xAI） | API Key | console.x.ai |
+| 閘道 | OpenRouter | OpenRouter 帳號登入 | 數百個模型 |
+| 閘道 | NVIDIA | API Key（nvapi-…） | build.nvidia.com，`https://integrate.api.nvidia.com/v1` |
+| 閘道 | Kilo Gateway | API Key | kilo.ai，`https://api.kilo.ai/api/gateway` |
+| 本地 | Ollama | 不需要 | `OLLAMA_HOST=0.0.0.0 ollama serve` |
+| 本地 | LM Studio | 不需要 | Developer → Start Server，開啟 Serve on Local Network |
+| 雲端 | Groq、DeepSeek、Mistral、Together AI | API Key | 各平台主控台 |
 
-按「＋」還可新增：OpenCode Zen、OpenCode Server、Ollama、Groq、DeepSeek、Mistral、Together AI、自訂 OpenAI 相容端點。
+按「＋」可另外新增「自訂（OpenAI 相容）」連接 vLLM、LiteLLM 等。刪掉的預設服務可在「AI 服務設定」右上角按「補回預設」。
 
 ## 功能
 - 串流輸出、停止、重新產生
@@ -46,7 +53,7 @@
 - LM Studio：Developer → Start Server → 開啟 Serve on Local Network，Base URL `http://電腦IP:1234/v1`
 
 ## 測試
-`tools/protocol-tests/run.sh` 會啟動真實的 `opencode serve` 與本地模擬 LLM 伺服器，執行 App 的網路程式碼（15 項，全部通過）。
+`tools/protocol-tests/run.sh` 會啟動真實的 `opencode serve` 與本地模擬 LLM 伺服器，執行 App 的網路程式碼（19 項，全部通過）。
 - 真實測試：OpenCode Server（列模型、建立與沿用 session、模型留空、帳號:密碼、錯誤密碼）
 - 模擬伺服器測試：OpenAI 相容、Anthropic、Gemini 的串流與模型清單
 - 尚未測試：Android 介面（測試環境無法下載 Android SDK）、真實雲端服務、OpenCode Zen
