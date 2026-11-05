@@ -24,6 +24,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -40,7 +41,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
@@ -59,6 +62,7 @@ fun ProvidersScreen(vm: ChatViewModel, onBack: () -> Unit, onEdit: (com.aichathu
             TopAppBar(
                 title = { Text("AI 服務設定") },
                 navigationIcon = { IconButton(onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "返回") } },
+                actions = { TextButton({ vm.restoreFeatured() }) { Text("補回預設") } },
             )
         },
         floatingActionButton = { FloatingActionButton({ choosePreset = true }) { Icon(Icons.Default.Add, "新增") } },
@@ -89,6 +93,7 @@ fun ProvidersScreen(vm: ChatViewModel, onBack: () -> Unit, onEdit: (com.aichathu
             text = {
                 LazyColumn(Modifier.heightIn(max = 460.dp)) {
                     items(Presets.all) { preset ->
+                        if (preset == Presets.others.first()) HorizontalDivider(Modifier.padding(vertical = 6.dp))
                         Column(Modifier.fillMaxWidth().clickable { choosePreset = false; onEdit(preset.toConfig()) }.padding(vertical = 10.dp)) {
                             Text(preset.label, style = MaterialTheme.typography.titleSmall)
                             if (preset.hint.isNotBlank()) Text(preset.hint, style = MaterialTheme.typography.bodySmall)
@@ -148,7 +153,7 @@ fun EditProviderScreen(vm: ChatViewModel, onBack: () -> Unit) {
 
             when (auth) {
                 AuthKind.API_KEY -> OutlinedTextField(
-                    key, { key = it }, label = { Text(if (type == ApiType.OPENCODE) "伺服器密碼（或 帳號:密碼）" else "API Key") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    key, { key = it }, label = { Text(if (type == ApiType.OPENCODE) "伺服器密碼（沒設密碼可留空；或填 帳號:密碼）" else "API Key") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
                     placeholder = { Text(if (hasKey) "已加密儲存（留空則不變更）" else "sk-…") },
                     visualTransformation = if (showKey) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = { TextButton({ showKey = !showKey }) { Text(if (showKey) "隱藏" else "顯示") } },
@@ -161,6 +166,10 @@ fun EditProviderScreen(vm: ChatViewModel, onBack: () -> Unit) {
                         val authUrl = vm.beginOpenRouterLogin(p.id)
                         ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(authUrl)))
                     }) { Text(if (hasKey) "重新登入 OpenRouter" else "使用 OpenRouter 帳號登入") }
+                }
+                AuthKind.OAUTH_GITHUB_COPILOT -> Column {
+                    Text(if (hasKey) "✅ 已登入 GitHub" else "尚未登入（需 GitHub Copilot 訂閱，含免費版）", style = MaterialTheme.typography.bodyMedium)
+                    Button(onClick = { vm.beginCopilotLogin(draft()) }) { Text(if (hasKey) "重新登入 GitHub" else "使用 GitHub 帳號登入") }
                 }
                 AuthKind.NONE -> Text("本地服務（Ollama / LM Studio）通常不需要金鑰。", style = MaterialTheme.typography.bodySmall)
             }
@@ -177,6 +186,28 @@ fun EditProviderScreen(vm: ChatViewModel, onBack: () -> Unit) {
                             color = if (m == model) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
                     }
                 }
+            }
+
+            val dc by vm.copilotLogin.collectAsState()
+            dc?.let { code ->
+                val clipboard = LocalClipboardManager.current
+                AlertDialog(
+                    onDismissRequest = {},
+                    title = { Text("GitHub 登入") },
+                    text = {
+                        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Text("1. 複製驗證碼\n2. 在開啟的 GitHub 頁面輸入並授權\n3. 回到 App，會自動完成登入")
+                            Text(code.userCode, style = MaterialTheme.typography.headlineMedium)
+                        }
+                    },
+                    confirmButton = {
+                        Button({
+                            clipboard.setText(AnnotatedString(code.userCode))
+                            ctx.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(code.verificationUri)))
+                        }) { Text("複製並開啟 GitHub") }
+                    },
+                    dismissButton = { TextButton({ vm.cancelCopilotLogin() }) { Text("取消") } },
+                )
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {

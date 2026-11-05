@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
@@ -22,10 +23,21 @@ class Repository(context: Context) {
     private val _conversations = MutableStateFlow(loadConversations())
     val conversations: StateFlow<List<Conversation>> = _conversations.asStateFlow()
 
-    private fun loadProviders(): List<ProviderConfig> =
-        prefs.getString("providers", null)
-            ?.let { runCatching { json.decodeFromString<List<ProviderConfig>>(it) }.getOrNull() }
-            ?: emptyList()
+    private fun loadProviders(): List<ProviderConfig> {
+        val saved = prefs.getString("providers", null)
+            ?: return Presets.featured.map { it.toConfig() }.also { persistRaw(it) } // 首次啟動：建立預設 7 個服務
+        return runCatching { json.decodeFromString<List<ProviderConfig>>(saved) }.getOrNull() ?: emptyList()
+    }
+
+    private fun persistRaw(list: List<ProviderConfig>) =
+        prefs.edit().putString("providers", json.encodeToString(list)).apply()
+
+    /** 把缺少的預設服務補回來（依名稱判斷） */
+    fun restoreFeatured(): Int {
+        val missing = Presets.featured.filter { f -> _providers.value.none { it.name == f.label } }
+        if (missing.isNotEmpty()) persistProviders(_providers.value + missing.map { it.toConfig() })
+        return missing.size
+    }
 
     private fun loadConversations(): List<Conversation> =
         convDir.listFiles { f -> f.extension == "json" }.orEmpty()
@@ -34,7 +46,7 @@ class Repository(context: Context) {
 
     private fun persistProviders(list: List<ProviderConfig>) {
         _providers.value = list
-        prefs.edit().putString("providers", json.encodeToString(list)).apply()
+        persistRaw(list)
     }
 
     /** secret == null 表示不變更已存的金鑰；空字串表示清除 */

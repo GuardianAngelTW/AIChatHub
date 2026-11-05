@@ -1,6 +1,7 @@
 package com.aichathub.net
 
 import com.aichathub.data.ApiType
+import com.aichathub.data.AuthKind
 import com.aichathub.data.ChatMessage
 import com.aichathub.data.ProviderConfig
 import kotlinx.coroutines.Dispatchers
@@ -43,13 +44,14 @@ class ChatClient(
         .readTimeout(5, TimeUnit.MINUTES) // 本地大模型首字可能很慢
         .build(),
 ) {
-    private val json = Json { ignoreUnknownKeys = true }
+    internal val json = Json { ignoreUnknownKeys = true }
     private val jsonType = "application/json".toMediaType()
 
-    private fun base(p: ProviderConfig) = p.baseUrl.trim().trimEnd('/')
+    internal fun base(p: ProviderConfig) = p.baseUrl.trim().trimEnd('/')
 
-    private fun Request.Builder.auth(p: ProviderConfig, key: String?): Request.Builder = apply {
-        val k = key?.takeIf { it.isNotBlank() } ?: return@apply
+    internal fun Request.Builder.auth(p: ProviderConfig, key: String?): Request.Builder = apply {
+        var k = key?.takeIf { it.isNotBlank() } ?: return@apply
+        if (p.auth == AuthKind.OAUTH_GITHUB_COPILOT) k = CopilotAuth.copilotToken(http, k) // GitHub token → Copilot token
         when (p.type) {
             ApiType.OPENAI -> header("Authorization", "Bearer $k")
             ApiType.ANTHROPIC -> header("x-api-key", k)
@@ -62,8 +64,9 @@ class ChatClient(
         }
     }
 
-    private fun Request.Builder.common(p: ProviderConfig): Request.Builder = apply {
+    internal fun Request.Builder.common(p: ProviderConfig): Request.Builder = apply {
         if (p.type == ApiType.ANTHROPIC) header("anthropic-version", "2023-06-01")
+        if (p.auth == AuthKind.OAUTH_GITHUB_COPILOT) CopilotAuth.HEADERS.forEach { (k, v) -> header(k, v) }
         if (p.baseUrl.contains("openrouter.ai")) {
             header("HTTP-Referer", "https://github.com/aichathub/android")
             header("X-Title", "AI Chat Hub")
@@ -124,7 +127,7 @@ class ChatClient(
         }
     }.flowOn(Dispatchers.IO)
 
-    private fun post(url: String, body: JsonObject) =
+    internal fun post(url: String, body: JsonObject) =
         Request.Builder().url(url).post(body.toString().toRequestBody(jsonType))
 
     private fun openAiRequest(p: ProviderConfig, model: String, system: String, history: List<ChatMessage>) =
@@ -227,7 +230,13 @@ class ChatClient(
                     }
                 }
                 else -> root["data"]?.jsonArray.orEmpty().mapNotNull { it.jsonObject["id"]?.str() }
-            }.sorted()
+            }.sorted().let { list ->
+                // OpenCode：各供應商的預設模型排最前面（例如 opencode/big-pickle、anthropic/claude-…）
+                if (p.type != ApiType.OPENCODE) list else {
+                    val defaults = (root["default"] as? JsonObject).orEmpty().map { (k, v) -> "$k/${v.str()}" }.toSet()
+                    list.filter { it in defaults } + list.filterNot { it in defaults }
+                }
+            }
         }
     }
 

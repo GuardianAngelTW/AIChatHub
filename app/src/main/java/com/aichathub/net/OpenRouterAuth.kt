@@ -23,7 +23,7 @@ import java.security.SecureRandom
  * 不需要使用者手動複製任何金鑰。
  */
 object OpenRouterAuth {
-    const val CALLBACK = "aichathub://oauth/openrouter"
+    const val CALLBACK = "aichathublite://oauth/openrouter"
 
     private fun b64url(bytes: ByteArray) =
         Base64.encodeToString(bytes, Base64.URL_SAFE or Base64.NO_PADDING or Base64.NO_WRAP)

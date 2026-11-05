@@ -16,6 +16,7 @@ enum class ApiType(val label: String) {
 enum class AuthKind(val label: String) {
     API_KEY("API Key"),
     OAUTH_OPENROUTER("OpenRouter 帳號登入"),
+    OAUTH_GITHUB_COPILOT("GitHub 帳號登入"),
     NONE("不需驗證（本地）"),
 }
 

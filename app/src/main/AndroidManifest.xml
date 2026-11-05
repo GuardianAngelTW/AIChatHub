@@ -20,12 +20,12 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-            <!-- OAuth 登入回呼：aichathub://oauth/openrouter?code=... -->
+            <!-- OAuth 登入回呼：aichathublite://oauth/openrouter?code=... -->
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="aichathub" android:host="oauth" />
+                <data android:scheme="aichathublite" android:host="oauth" />
             </intent-filter>
         </activity>
     </application>

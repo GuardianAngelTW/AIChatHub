@@ -19,6 +19,8 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
@@ -126,7 +128,10 @@ fun ChatScreen(vm: ChatViewModel, openProviders: () -> Unit) {
                             modifier = Modifier.clickable(enabled = providers.isNotEmpty()) { showPicker = true },
                         ) {
                             Column(Modifier.weight(1f, fill = false)) {
-                                Text(provider?.name ?: "尚未選擇服務", style = MaterialTheme.typography.titleMedium, maxLines = 1)
+                                Text(
+                                    provider?.name ?: "尚未選擇服務",
+                                    style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                                )
                                 Text(
                                     conv.model.ifBlank { provider?.defaultModel.orEmpty() }.ifBlank { "點此選擇模型" },
                                     style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis,
@@ -260,11 +265,13 @@ private fun ModelPickerDialog(vm: ChatViewModel, currentProvider: String?, curre
         mutableStateOf(if (pid == currentProvider && currentModel.isNotBlank()) currentModel else p?.defaultModel.orEmpty())
     }
     var filter by remember(pid) { mutableStateOf("") }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("選擇服務與模型") },
         text = {
-            Column {
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Text("AI 服務與模型", style = MaterialTheme.typography.labelLarge)
                 providers.forEach { prov ->
                     Row(Modifier.fillMaxWidth().clickable { pid = prov.id }, verticalAlignment = Alignment.CenterVertically) {
                         RadioButton(selected = prov.id == pid, onClick = { pid = prov.id })
@@ -280,8 +287,8 @@ private fun ModelPickerDialog(vm: ChatViewModel, currentProvider: String?, curre
                             singleLine = true, modifier = Modifier.weight(1f))
                     }
                     val shown = p.models.filter { filter.isBlank() || it.contains(filter, ignoreCase = true) }
-                    LazyColumn(Modifier.heightIn(max = 220.dp)) {
-                        items(shown) { m ->
+                    Column {
+                        shown.take(200).forEach { m ->
                             Text(
                                 m, maxLines = 1, overflow = TextOverflow.Ellipsis,
                                 color = if (m == model) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
@@ -293,7 +300,10 @@ private fun ModelPickerDialog(vm: ChatViewModel, currentProvider: String?, curre
             }
         },
         confirmButton = {
-            TextButton(enabled = pid != null && model.isNotBlank(), onClick = { vm.selectModel(pid!!, model.trim()); onDismiss() }) { Text("確定") }
+            TextButton(enabled = pid != null, onClick = {
+                vm.selectModel(pid!!, model.trim())
+                onDismiss()
+            }) { Text("確定") }
         },
         dismissButton = { TextButton(onDismiss) { Text("取消") } },
     )

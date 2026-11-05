@@ -10,18 +10,31 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.aichathub"
+        applicationId = "com.aichathub.lite"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.1.0"
+    }
+
+    // 固定簽章：每次建置（本機或 GitHub Actions）簽章都相同，才能直接覆蓋安裝更新。
+    // 此金鑰僅供個人測試；若要公開發布，請換成自己保管的金鑰。
+    signingConfigs {
+        create("shared") {
+            storeFile = file("aichathub.keystore")
+            storePassword = "aichathub"
+            keyAlias = "aichathub"
+            keyPassword = "aichathub"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("shared")
+        }
         release {
             isMinifyEnabled = false
-            // 若未設定正式簽章，release 仍以 debug key 簽署，方便直接安裝測試
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("shared")
         }
     }
     compileOptions {

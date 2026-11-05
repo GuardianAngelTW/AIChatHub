@@ -30,12 +30,12 @@ jobs:
         run: chmod +x gradlew && ./gradlew assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: AIChatHub-debug-apk
+          name: AIChatHubLite-debug-apk
           path: app/build/outputs/apk/debug/*.apk
       - name: Publish APK to release
         if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v1.0.${{ github.run_number }}
-          name: AIChatHub debug APK (build ${{ github.run_number }})
+          tag_name: lite-v1.0.${{ github.run_number }}
+          name: AIChatHubLite APK (build ${{ github.run_number }})
           files: app/build/outputs/apk/debug/*.apk

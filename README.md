@@ -1,96 +1,66 @@
-# AI Chat Hub（Android）
+# AI Chat Hub Lite（Android）
 
-一個 App 串接各家雲端 AI 平台與本地模型：可以用**帳號登入**或 **API Key**。
+只有對話功能的精簡版：用帳號登入或 API Key 連接各家雲端 AI 平台與本地模型。沒有 Agent、MCP、A2A、上網搜尋。
+
+套件名稱 `com.aichathub.lite`，可以和完整版 AI Chat Hub 同時安裝。
 
 ## 支援的服務
 
-| 類型 | 服務 | 驗證方式 |
-|---|---|---|
-| 雲端（登入） | **OpenRouter**：一個帳號就能用數百個模型（GPT、Claude、Gemini、Llama、DeepSeek…） | OAuth PKCE 登入，自動取得金鑰 |
-| 雲端（OpenCode） | **OpenCode Zen**：OpenCode 官方精選模型閘道，`https://opencode.ai/zen/v1`（含免費模型） | API Key |
-| 雲端（OpenCode） | **OpenCode Zen（Claude 模型）**：Anthropic 協定，同一個 Zen 端點 | API Key |
-| 自架（OpenCode） | **OpenCode Server**（`opencode serve`）：可使用你在 OpenCode 裡 `/connect` 登入的所有供應商，包含 Claude Pro/Max、GitHub Copilot 等**帳號登入** | 伺服器密碼（HTTP Basic） |
-| 雲端 | OpenAI、Anthropic Claude、Google Gemini、Groq、DeepSeek、Mistral、xAI、Together | API Key |
-| 本地 | Ollama、LM Studio、vLLM、LiteLLM 或任何 OpenAI 相容端點 | 不需要／自訂 |
+首次開啟會自動建立以下 7 個服務，填入金鑰或登入即可使用：
 
-支援四種協定：**OpenAI 相容**、**Anthropic Messages**、**Gemini generateContent**、**OpenCode Server API**。
+| 服務 | 驗證方式 |
+|---|---|
+| GPT（OpenAI） | API Key（platform.openai.com/api-keys） |
+| Claude（Anthropic） | API Key（console.anthropic.com） |
+| Gemini（Google） | API Key（aistudio.google.com/apikey） |
+| GitHub Copilot | GitHub 帳號登入（裝置碼，需 Copilot 訂閱） |
+| Grok（xAI） | API Key（console.x.ai） |
+| OpenRouter | OpenRouter 帳號登入 |
+| LM Studio（本地） | 不需要 |
+
+按「＋」還可新增：OpenCode Zen、OpenCode Server、Ollama、Groq、DeepSeek、Mistral、Together AI、自訂 OpenAI 相容端點。
 
 ## 功能
+- 串流輸出、停止、重新產生
+- 多服務多模型切換，自動抓取模型清單
+- 每個對話可設系統提示詞
+- 對話存在手機本機；API Key 以 Android Keystore 加密
+- 連線失敗時顯示具體原因
 
-- 串流輸出（SSE），可中途停止、重新產生
-- 多服務多模型即時切換，自動抓取模型清單（同時用來測試連線）
-- 每個對話可設系統提示詞（System Prompt）
-- 對話紀錄存在手機本機（JSON），側邊欄管理
-- API Key 以 **Android Keystore AES-256-GCM** 加密儲存，不會上傳到任何第三方
-- Material 3 + 動態配色、深色模式
+## 安裝（雲端建置）
+1. 把此資料夾推到 GitHub repo 的 `main` 分支
+2. Actions 自動執行「Build APK」
+3. 在該次執行的 Artifacts 下載 `AIChatHubLite-debug-apk`，解壓後安裝
 
-## 使用 OpenCode
+專案內附固定簽章（`app/aichathub.keystore`），之後每次建置都能直接覆蓋更新。此金鑰僅供個人測試，公開發布請換成自己的金鑰。
 
-### OpenCode Zen（最簡單）
-1. 到 opencode.ai 登入並建立 Zen API Key
-2. App →「AI 服務設定」→ ＋ →「OpenCode Zen」→ 貼上 Key →「測試連線」抓取模型 → 儲存
-3. Claude 系列模型請另外新增「OpenCode Zen（Claude 模型）」
+## OpenCode Server 檢查清單
+1. 電腦上啟動：`opencode serve --hostname 0.0.0.0 --port 4096`（要設密碼就在前面加 `OPENCODE_SERVER_PASSWORD=密碼`）
+2. 先在電腦上確認：`curl http://127.0.0.1:4096/config/providers`
+3. 確認 OpenCode 至少登入一個供應商（`opencode auth login`），或使用內建免費模型
+4. App 的 Base URL 填 `http://電腦區網IP:4096`，手機與電腦在同一個 Wi-Fi；沒設密碼則密碼欄留空
+5. 按「測試連線」後直接對話；預設模型可以留空（使用 OpenCode 的預設模型）
 
-### OpenCode Server（用 OpenCode 帳號登入的所有供應商）
-在電腦或雲端主機上：
-```bash
-opencode auth login        # 或在 TUI 內 /connect，登入 Claude、Copilot、OpenAI 等
-OPENCODE_SERVER_PASSWORD=你的密碼 opencode serve --hostname 0.0.0.0 --port 4096
-```
-App →「OpenCode Server」→ Base URL 填 `http://電腦IP:4096`，密碼欄填上面的密碼 →「測試連線」。
-模型格式為 `providerID/modelID`（例如 `anthropic/claude-sonnet-5-5`），留空則用 OpenCode 預設模型。
-OpenCode Server 會在伺服器端保存對話與執行工具，回覆在 agent 完成後一次顯示。
-
-> 對外網路暴露時請務必設定密碼，並建議放在 HTTPS 反向代理（Caddy / Cloudflare Tunnel / Tailscale）後面。
-
-## 使用本地模型（Ollama / LM Studio）
-- Ollama：`OLLAMA_HOST=0.0.0.0 ollama serve`，Base URL 填 `http://電腦IP:11434/v1`
+## 本地模型
+- Ollama：`OLLAMA_HOST=0.0.0.0 ollama serve`，Base URL `http://電腦IP:11434/v1`
 - LM Studio：Developer → Start Server → 開啟 Serve on Local Network，Base URL `http://電腦IP:1234/v1`
-- 手機與電腦需在同一個 Wi-Fi（或用 Tailscale）
 
-## 在雲端建置 APK（不需要安裝 Android Studio）
-
-專案附 GitHub Actions：
-1. 把此資料夾推到一個 GitHub repo（main 分支）
-2. Actions 會自動執行「Build APK」，或在 Actions 頁手動 Run workflow
-3. 完成後在該次執行的 **Artifacts** 下載 `AIChatHub-debug-apk`，解壓後安裝到手機（需允許安裝未知來源 App）
-
-本機建置：安裝 Android SDK（API 35）後執行 `./gradlew assembleDebug`。
+## 測試
+`tools/protocol-tests/run.sh` 會啟動真實的 `opencode serve` 與本地模擬 LLM 伺服器，執行 App 的網路程式碼（15 項，全部通過）。
+- 真實測試：OpenCode Server（列模型、建立與沿用 session、模型留空、帳號:密碼、錯誤密碼）
+- 模擬伺服器測試：OpenAI 相容、Anthropic、Gemini 的串流與模型清單
+- 尚未測試：Android 介面（測試環境無法下載 Android SDK）、真實雲端服務、OpenCode Zen
 
 ## 專案結構
-
 ```
 app/src/main/java/com/aichathub/
-├── MainActivity.kt          # 入口、OAuth 回呼（aichathub://oauth/...）
-├── data/
-│   ├── Models.kt            # ProviderConfig / Conversation / ChatMessage
-│   ├── Presets.kt           # 各平台預設範本
-│   ├── SecureStore.kt       # Keystore 加密金鑰
-│   └── Repository.kt        # 本機儲存
+├── MainActivity.kt          # 入口、OAuth 回呼（aichathublite://oauth/...）
+├── data/                    # 資料模型、服務範本、加密儲存、本機儲存
 ├── net/
-│   ├── ChatClient.kt        # 四種協定的串流對話與模型清單
-│   └── OpenRouterAuth.kt    # OpenRouter OAuth PKCE 登入
-└── ui/
-    ├── ChatViewModel.kt
-    ├── App.kt               # 主題與畫面切換
-    ├── ChatScreen.kt        # 對話、側邊欄、模型選擇
-    └── ProviderScreens.kt   # 服務清單與編輯
+│   ├── ChatClient.kt        # OpenAI 相容 / Anthropic / Gemini / OpenCode 串流與模型清單
+│   ├── OpenRouterAuth.kt    # OpenRouter OAuth PKCE
+│   └── CopilotAuth.kt       # GitHub Copilot 裝置碼登入
+└── ui/                      # 對話畫面、服務設定、ViewModel
 ```
 
-## 後續可擴充
-- Markdown／程式碼高亮渲染、圖片與檔案輸入（多模態）
-- OpenCode Server 的 `/event` SSE 即時顯示 agent 步驟
-- Google 帳號 OAuth（需自行在 Google Cloud 建立 OAuth Client）
-- 對話匯出、雲端同步
-
-## 文檔
-
-- **使用說明與技術手冊**（安裝、服務設定、Agent／MCP／A2A、協定實作、擴充指南）：
-  - Markdown：[docs/AIChatHub_使用說明與技術手冊.md](docs/AIChatHub_使用說明與技術手冊.md)
-  - PDF：[docs/AIChatHub_使用說明與技術手冊.pdf](docs/AIChatHub_使用說明與技術手冊.pdf)
-  - Word：[docs/AIChatHub_使用說明與技術手冊.docx](docs/AIChatHub_使用說明與技術手冊.docx)
-- **架構圖**：[docs/AIChatHub_架構圖.png](docs/AIChatHub_架構圖.png)
-
-## 授權
-
-本專案由 Claude（AI）從零設計，作為 **AI 協作開發 Android App 的參考範本**。以 MIT License 釋出：**可以自由修改、直接拿來用、拿去做出自己的產品**，無版權負擔。詳見 [LICENSE](LICENSE)。
+> GitHub Copilot 使用 GitHub 未公開文件的介面（與 OpenCode 等開源客戶端相同方式），可能隨時變更，請自行評估是否符合 GitHub 服務條款。
