@@ -82,3 +82,7 @@ app/src/main/java/com/aichathub/
 - OpenCode Server 的 `/event` SSE 即時顯示 agent 步驟
 - Google 帳號 OAuth（需自行在 Google Cloud 建立 OAuth Client）
 - 對話匯出、雲端同步
+
+## 授權
+
+本專案由 Claude（AI）從零設計，作為 **AI 協作開發 Android App 的參考範本**。以 MIT License 釋出：**可以自由修改、直接拿來用、拿去做出自己的產品**，無版權負擔。詳見 [LICENSE](LICENSE)。
