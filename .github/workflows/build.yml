@@ -3,8 +3,18 @@ name: Build APK
 on:
   push:
     branches: [ pro ]
+    paths-ignore:
+      - "**.md"
+      - "LICENSE"
+      - "**.png"
+      - "**.pdf"
+      - "**.docx"
+      - "docs/**"
   pull_request:
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -15,11 +25,26 @@ jobs:
         with:
           distribution: temurin
           java-version: 17
-      - uses: android-actions/setup-android@v3
       - uses: gradle/actions/setup-gradle@v4
       - name: Build debug APK
         run: chmod +x gradlew && ./gradlew assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: AIChatHub-debug-apk
+          name: AIChatHubPro-debug-apk
           path: app/build/outputs/apk/debug/*.apk
+      - name: Publish APK to release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: pro-v1.2.${{ github.run_number }}
+          name: AIChatHubPro v1.2 APK (build ${{ github.run_number }})
+          files: app/build/outputs/apk/debug/*.apk
+
+      - name: Keep only latest release (master's standing rule - retire old versions automatically)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          new_tag="pro-v1.2.${{ github.run_number }}"
+          gh api "repos/${{ github.repository }}/releases?per_page=100" --paginate -q '.[].tag_name' \
+            | grep "^pro-" | grep -v "^${new_tag}$" \
+            | while read -r t; do gh release delete "$t" --yes --cleanup-tag || true; done
