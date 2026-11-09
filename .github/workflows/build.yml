@@ -33,7 +33,7 @@ jobs:
           name: AIChatHubPro-debug-apk
           path: app/build/outputs/apk/debug/*.apk
       - name: Publish APK to release
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/pro'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: pro-v1.2.${{ github.run_number }}
